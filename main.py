@@ -34,6 +34,7 @@ if __name__=='__main__':
     parser.add_argument('--testing', action='store_true')
     parser.add_argument('--resume', action='store_true')
     parser.add_argument('--augmentation', required=False, type=str)
+    parser.add_argument('--sampling_ratio', default=0.05, type=float)
     # Path setting
     parser.add_argument('--data_path', default='/nas_homes/dataset/text_classification', type=str,
                         help='Original data path')

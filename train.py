@@ -39,7 +39,7 @@ def training(args):
 
     write_log(logger, "Load data...")
 
-    total_src_list, total_trg_list = data_load(data_path=args.data_path, data_name=args.data_name, augmentation=args.augmentation)
+    total_src_list, total_trg_list = data_load(data_path=args.data_path, data_name=args.data_name, augmentation=args.augmentation, sampling_ratio=args.sampling_ratio)
 
     # tokenizer load
     tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
@@ -152,17 +152,7 @@ def training(args):
             with torch.no_grad():
 
                 # Encoding
-                encoder_out = model.encode(src_input_ids=src_sequence, src_attention_mask=src_att)
-
-                # PCA
-                if args.pca_reduction:
-                    U, S, V = model.pca_reduction(encoder_hidden_states=encoder_out)
-                    encoder_out = U.transpose(1,2)
-                    src_att = None
-
-                # Classify
-                eos_mask = src_sequence.eq(model.eos_idx).to(encoder_out.device)
-                logit = model.classify(hidden_states=encoder_out, eos_mask=eos_mask)
+                logit = model(input_ids=src_sequence, attention_mask=src_att)['logits']
 
             val_acc += (logit.argmax(dim=1) == trg_label).sum() / len(trg_label)
             val_loss += criterion(logit, trg_label)

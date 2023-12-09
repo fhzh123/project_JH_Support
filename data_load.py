@@ -12,7 +12,15 @@ def data_split_index(data_len: int, split_ratio: float = 0.1):
 
     return origin_index, split_index
 
-def data_load(data_path:str = None, data_name:str = None, augmentation:str = None):
+def sampling_index(data_len: int, split_ratio: float = 0.1):
+
+    split_num = int(data_len * split_ratio)
+
+    split_index = np.random.choice(data_len, split_num, replace=False)
+
+    return split_index
+
+def data_load(data_path:str = None, data_name:str = None, augmentation:str = None, sampling_ratio:float = None):
 
     total_src_list, total_trg_list = dict(), dict()
 
@@ -22,13 +30,16 @@ def data_load(data_path:str = None, data_name:str = None, augmentation:str = Non
 
         # 1) Train data load
         train_dat = pd.read_csv(f'/nas_homes/dataset/text_classification/{data_name}/train.csv', names=['label', 'text'])
+        sampling_ix = sampling_index(data_len=len(train_dat), split_ratio=sampling_ratio)
         total_src_list['train'] = train_dat['text'].tolist()
+        total_src_list['train'] = list(map(total_src_list['train'].__getitem__, sampling_ix))
         total_trg_list['train'] = train_dat['label'].tolist()
+        total_trg_list['train'] = list(map(total_trg_list['train'].__getitem__, sampling_ix))
 
         if augmentation is not None:
             train_aug_dat = pd.read_csv(f'train_SST2_{augmentation}.csv', names=['aug_text', 'label'])
-            total_src_list['train'] = total_src_list['train'] + train_aug_dat['aug_text'].tolist()
-            total_trg_list['train'] = total_trg_list['train'] + train_aug_dat['label'].tolist()
+            total_src_list['train'] = total_src_list['train'] + list(map(train_aug_dat['label'].tolist().__getitem__, sampling_ix))
+            total_trg_list['train'] = total_trg_list['train'] + list(map(train_aug_dat['label'].tolist().__getitem__, sampling_ix))
 
         # 2) Valid data load
         test_dat = pd.read_csv(f'/nas_homes/dataset/text_classification/{data_name}/train.csv', names=['label', 'text'])
@@ -46,13 +57,16 @@ def data_load(data_path:str = None, data_name:str = None, augmentation:str = Non
 
         # 1) Train data load
         train_dat = pd.read_csv(f'/nas_homes/dataset/text_classification/{data_name}/train.csv', names=['label', 'text'])
+        sampling_ix = sampling_index(data_len=len(train_dat), split_ratio=sampling_ratio)
         total_src_list['train'] = train_dat['text'].tolist()
+        total_src_list['train'] = list(map(total_src_list['train'].__getitem__, sampling_ix))
         total_trg_list['train'] = train_dat['label'].tolist()
+        total_trg_list['train'] = list(map(total_trg_list['train'].__getitem__, sampling_ix))
 
         if augmentation is not None:
             train_aug_dat = pd.read_csv(f'train_Yelp_Full_{augmentation}.csv', names=['aug_text', 'label'])
-            total_src_list['train'] = total_src_list['train'] + train_aug_dat['aug_text'].tolist()
-            total_trg_list['train'] = total_trg_list['train'] + train_aug_dat['label'].tolist()
+            total_src_list['train'] = total_src_list['train'] + list(map(train_aug_dat['aug_text'].tolist().__getitem__, sampling_ix))
+            total_trg_list['train'] = total_trg_list['train'] + list(map(train_aug_dat['label'].tolist().__getitem__, sampling_ix))
 
         # 2) Valid data load
         test_dat = pd.read_csv(f'/nas_homes/dataset/text_classification/{data_name}/train.csv', names=['label', 'text'])
@@ -69,16 +83,19 @@ def data_load(data_path:str = None, data_name:str = None, augmentation:str = Non
         dataset = load_dataset("imdb")
 
         # origin_index, split_index = data_split_index(data_len=len(dataset['test']['text']), split_ratio=0.5)
+        sampling_ix = sampling_index(data_len=len(dataset['train']['text']), split_ratio=sampling_ratio)
 
         # 1) Train data load
         total_src_list['train'] = np.array(dataset['train']['text']).tolist()
+        total_src_list['train'] = list(map(total_src_list['train'].__getitem__, sampling_ix))
         total_trg_list['train'] = np.array(dataset['train']['label']).tolist()
+        total_trg_list['train'] = list(map(total_trg_list['train'].__getitem__, sampling_ix))
         if augmentation is not None:
             train_aug_dat = pd.read_csv(f'train_IMDB_{augmentation}.csv')
             train_aug_dat['label'] = train_aug_dat['label'].replace('positive', 0)
             train_aug_dat['label'] = train_aug_dat['label'].replace('negative', 1)
-            total_src_list['train'] = total_src_list['train'] + train_aug_dat['aug_text'].tolist()
-            total_trg_list['train'] = total_trg_list['train'] + train_aug_dat['label'].tolist()
+            total_src_list['train'] = total_src_list['train'] + list(map(train_aug_dat['aug_text'].tolist().__getitem__, sampling_ix))
+            total_trg_list['train'] = total_trg_list['train'] + list(map(train_aug_dat['label'].tolist().__getitem__, sampling_ix))
 
         # 2) Valid data load
         # total_src_list['valid'] = np.array(dataset['test']['text'])[origin_index]
