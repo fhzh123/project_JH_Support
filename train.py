@@ -1,5 +1,4 @@
-def training(args):
-    import os
+import os
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 import logging
 import numpy as np
@@ -19,7 +18,7 @@ from optimizer.utils import optimizer_select, scheduler_select
 from utils import TqdmLoggingHandler, write_log
 from data_load import data_load
 
-def cls_training(args):
+def training(args):
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -43,8 +42,8 @@ def cls_training(args):
     total_src_list, total_trg_list = data_load(data_path=args.data_path, data_name=args.data_name, augmentation=args.augmentation)
 
     # tokenizer load
-    tokenizer = AutoTokenizer.from_pretrained('bert-base-cased')
-    vocab_num = src_tokenizer.vocab_size
+    tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
+    vocab_num = tokenizer.vocab_size
 
     dataset_dict = {
         'train': Seq2LabelDataset(tokenizer=tokenizer, src_list=total_src_list['train'], trg_list=total_trg_list['train'], 
@@ -60,7 +59,7 @@ def cls_training(args):
     }
     write_log(logger, f"Total number of trainingsets iterations - {len(dataset_dict['train'])}, {len(dataloader_dict['train'])}")
 
-    model = BertForSequenceClassification.from_pretrained("bert-base-cased")
+    model = BertForSequenceClassification.from_pretrained("bert-base-uncased")
     model.to(device)
 
     # 3) Optimizer & Learning rate scheduler setting
@@ -90,7 +89,7 @@ def cls_training(args):
     write_log(logger, 'Traing start!')
     best_val_loss = 1e+7
 
-    for epoch in range(start_epoch + 1, args.cls_num_epochs + 1):
+    for epoch in range(start_epoch + 1, args.num_epochs + 1):
         start_time_e = time()
 
         write_log(logger, 'Training start...')
@@ -109,7 +108,7 @@ def cls_training(args):
             trg_label = batch_iter[1].to(device, non_blocking=True)
 
             # Encoding
-            logit = model(input_ids=src_sequence, attention_mask=src_att)
+            logit = model(input_ids=src_sequence, attention_mask=src_att)['logits']
             
             # Loss Backward
             train_loss = criterion(logit, trg_label)
@@ -119,12 +118,13 @@ def cls_training(args):
             optimizer.step()
             scheduler.step()
 
-            train_saved_acc += (logit.argmax(dim=1) == trg_label).sum() / len(trg_label)
+            train_acc = (logit.argmax(dim=1) == trg_label).sum() / len(trg_label)
+            train_saved_acc += train_acc
             train_saved_loss += train_loss
 
             # Print loss value only training
             if i == 0 or i % args.print_freq == 0 or i == len(dataloader_dict['train'])-1:
-                train_acc = (logit.argmax(dim=1) == trg_label).sum() / len(trg_label)
+                
                 iter_log = "[Epoch:%03d][%03d/%03d] train_loss:%03.2f | train_accuracy:%03.2f | learning_rate:%1.6f |spend_time:%02.2fmin" % \
                     (epoch, i, len(dataloader_dict['train'])-1, train_loss.item(), train_acc.item() * 100, optimizer.param_groups[0]['lr'], (time() - start_time_e) / 60)
                 write_log(logger, iter_log)
@@ -134,6 +134,8 @@ def cls_training(args):
 
         train_saved_loss /= len(dataloader_dict['train'])
         train_saved_acc /= len(dataloader_dict['train'])
+        write_log(logger, 'Train Total CrossEntropy Loss: %3.3f' % train_saved_loss)
+        write_log(logger, 'Train Total Accuracy: %3.2f%%' % (train_saved_acc * 100))
 
         write_log(logger, 'Validation start...')
         model.eval()

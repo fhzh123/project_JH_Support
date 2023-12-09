@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import pandas as pd
 from datasets import load_dataset
 
 def data_split_index(data_len: int, split_ratio: float = 0.1):
@@ -25,7 +26,7 @@ def data_load(data_path:str = None, data_name:str = None, augmentation:str = Non
         total_trg_list['train'] = train_dat['label'].tolist()
 
         if augmentation is not None:
-            train_aug_dat = pd.read_csv(f'train_SST2_{args.augmentation}.csv', names=['aug_text', 'label'])
+            train_aug_dat = pd.read_csv(f'train_SST2_{augmentation}.csv', names=['aug_text', 'label'])
             total_src_list['train'] = total_src_list['train'] + train_aug_dat['aug_text'].tolist()
             total_trg_list['train'] = total_trg_list['train'] + train_aug_dat['label'].tolist()
 
@@ -49,7 +50,7 @@ def data_load(data_path:str = None, data_name:str = None, augmentation:str = Non
         total_trg_list['train'] = train_dat['label'].tolist()
 
         if augmentation is not None:
-            train_aug_dat = pd.read_csv(f'train_Yelp_Full_{args.augmentation}.csv', names=['aug_text', 'label'])
+            train_aug_dat = pd.read_csv(f'train_Yelp_Full_{augmentation}.csv', names=['aug_text', 'label'])
             total_src_list['train'] = total_src_list['train'] + train_aug_dat['aug_text'].tolist()
             total_trg_list['train'] = total_trg_list['train'] + train_aug_dat['label'].tolist()
 
@@ -70,10 +71,12 @@ def data_load(data_path:str = None, data_name:str = None, augmentation:str = Non
         # origin_index, split_index = data_split_index(data_len=len(dataset['test']['text']), split_ratio=0.5)
 
         # 1) Train data load
-        total_src_list['train'] = np.array(dataset['train']['text'])
-        total_trg_list['train'] = np.array(dataset['train']['label'])
+        total_src_list['train'] = np.array(dataset['train']['text']).tolist()
+        total_trg_list['train'] = np.array(dataset['train']['label']).tolist()
         if augmentation is not None:
-            train_aug_dat = pd.read_csv(f'train_IMDB_{args.augmentation}.csv', names=['aug_text', 'label'])
+            train_aug_dat = pd.read_csv(f'train_IMDB_{augmentation}.csv')
+            train_aug_dat['label'] = train_aug_dat['label'].replace('positive', 0)
+            train_aug_dat['label'] = train_aug_dat['label'].replace('negative', 1)
             total_src_list['train'] = total_src_list['train'] + train_aug_dat['aug_text'].tolist()
             total_trg_list['train'] = total_trg_list['train'] + train_aug_dat['label'].tolist()
 

@@ -32,18 +32,13 @@ def optimizer_select(optimizer_model, model, lr, w_decay):
 
 def scheduler_select(scheduler_model, optimizer, dataloader_len, task, args):
 
-    if task == 'cls':
-        num_epochs = args.cls_num_epochs
-    if task == 'recon':
-        num_epochs = args.recon_num_epochs
-
     # Scheduler setting
     if scheduler_model == 'constant':
         scheduler = StepLR(optimizer, step_size=dataloader_len, gamma=1)
     elif scheduler_model == 'warmup':
         scheduler = WarmupLinearSchedule(optimizer,
                                         warmup_steps=int(dataloader_len*args.n_warmup_epochs),
-                                        t_total=dataloader_len*num_epochs)
+                                        t_total=dataloader_len*args.num_epochs)
     elif scheduler_model == 'reduce_train':
         scheduler = ReduceLROnPlateau(optimizer, 'min', patience=int(dataloader_len*1.5),
                                       factor=0.5)

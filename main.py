@@ -33,45 +33,24 @@ if __name__=='__main__':
     parser.add_argument('--training', action='store_true')
     parser.add_argument('--testing', action='store_true')
     parser.add_argument('--resume', action='store_true')
+    parser.add_argument('--augmentation', required=False, type=str)
     # Path setting
-    parser.add_argument('--data_path', default='/HDD/dataset', type=str,
+    parser.add_argument('--data_path', default='/nas_homes/dataset/text_classification', type=str,
                         help='Original data path')
-    parser.add_argument('--preprocess_path', default=f'/HDD/{user_name}/preprocessed/project_LMT', type=str,
+    parser.add_argument('--preprocess_path', default=f'/HDD/{user_name}/preprocessed/project_JH_Support', type=str,
                         help='Pre-processing data path')
-    parser.add_argument('--model_save_path', default=f'/HDD/{user_name}/model_checkpoint/project_LMT', type=str,
+    parser.add_argument('--model_save_path', default=f'/HDD/{user_name}/model_checkpoint/project_JH_Support', type=str,
                         help='Model checkpoint file path')
-    parser.add_argument('--result_path', default=f'/HDD/{user_name}/results/project_LMT', type=str,
+    parser.add_argument('--result_path', default=f'/HDD/{user_name}/results/project_JH_Support', type=str,
                         help='Results file path')
     # Preprocessing setting
-    parser.add_argument('--src_max_len', default=150, type=int,
-                        help='Source input maximum length; Default is 150')
-    parser.add_argument('--trg_max_len', default=150, type=int,
-                        help='Target input maximum length; Default is 150')
-    # Model setting
-    parser.add_argument('--pca_reduction', action='store_true')
-    parser.add_argument('--src_tokenizer_type', default='T5', type=str,
-                        help='Source input tokenizer setting; Default is T5')
-    parser.add_argument('--trg_tokenizer_type', default='T5', type=str,
-                        help='Target input tokenizer setting; Default is T5')
-    parser.add_argument('--encoder_model_type', default='T5', type=str,
-                        help='Encoder model setting; Default is T5')
-    parser.add_argument('--decoder_model_type', type=lambda x : None if x == 'None' else str(x), nargs='?', default=None,
-                        help='Decoder model setting; Default is None')
-    # parser.add_argument('--decoder_model_type', default='T5', type=str,
-    #                     help='Decoder model setting; Default is T5')
-    parser.add_argument('--isPreTrain', default=True, type=str2bool,
-                        help='Use pre-trained language model; Default is True')
-    parser.add_argument('--dropout', default=0.2, type=float,
-                        help='Decoder model setting; Default is T5')
-    parser.add_argument('--pca_comp_n', default=5, type=int,
-                        help='Principal component n count; Default is 5')
-    parser.add_argument('--pooling', default='first_token', type=str,
-                        help='')
+    parser.add_argument('--src_max_len', default=300, type=int,
+                        help='Source input maximum length; Default is 300')
     # Train setting
     parser.add_argument('--random_seed', default=42, type=int,
                         help='Random seed setting; Default is 42')
-    parser.add_argument('--num_epochs', default=30, type=int,
-                        help='Number of epochs; Default is 30')
+    parser.add_argument('--num_epochs', default=10, type=int,
+                        help='Number of epochs; Default is 10')
     parser.add_argument('--batch_size', default=16, type=int,
                         help='Training batch size; Default is 16')
     parser.add_argument('--num_workers', default=8, type=int,
@@ -90,13 +69,6 @@ if __name__=='__main__':
                         help='Label smoothing epsilon; Default is 0.01')
     parser.add_argument('--clip_grad_norm', default=5, type=int,
                         help='Gradient clipping norm setting; Default is 5')
-    # Inference setting
-    parser.add_argument('--beam_size', default=5, type=int,
-                        help="")
-    parser.add_argument('--beam_alpha', default=0.7, type=float,
-                        help="")
-    parser.add_argument('--repetition_penalty', default=0.8, type=float,
-                        help="")
     # Checking setting
     parser.add_argument('--debugging_mode', action='store_true',
                         help='')
