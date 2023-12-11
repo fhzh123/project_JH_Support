@@ -30,6 +30,8 @@ if __name__=='__main__':
     # Task setting
     parser.add_argument('--data_name', default='IMDB', type=str,
                         help='')
+    parser.add_argument('--out_domain_data_name', default='IMDB', type=str,
+                        help='')
     parser.add_argument('--training', action='store_true')
     parser.add_argument('--testing', action='store_true')
     parser.add_argument('--resume', action='store_true')

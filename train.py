@@ -2,6 +2,7 @@ import os
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 import logging
 import numpy as np
+import pandas as pd
 from tqdm import tqdm
 from time import time
 # Import PyTorch
@@ -40,23 +41,38 @@ def training(args):
     write_log(logger, "Load data...")
 
     total_src_list, total_trg_list = data_load(data_path=args.data_path, data_name=args.data_name, augmentation=args.augmentation, sampling_ratio=args.sampling_ratio)
+    total_out_src_list, total_out_trg_list = data_load(data_path=args.data_path, data_name=args.out_domain_data_name, augmentation=args.augmentation)
 
     # tokenizer load
     tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
     vocab_num = tokenizer.vocab_size
 
-    dataset_dict = {
-        'train': Seq2LabelDataset(tokenizer=tokenizer, src_list=total_src_list['train'], trg_list=total_trg_list['train'], 
-                                  src_max_len=args.src_max_len),
-        'valid': Seq2LabelDataset(tokenizer=tokenizer, src_list=total_src_list['valid'], trg_list=total_trg_list['valid'], 
-                                  src_max_len=args.src_max_len)
-    }
-    dataloader_dict = {
-        'train': DataLoader(dataset_dict['train'], drop_last=False, batch_size=args.batch_size, shuffle=True,
-                            pin_memory=True, num_workers=args.num_workers),
-        'valid': DataLoader(dataset_dict['valid'], drop_last=False, batch_size=args.batch_size, shuffle=True, 
-                            pin_memory=True, num_workers=args.num_workers)
-    }
+    if args.data_name == args.out_domain_data_name:
+        dataset_dict = {
+            'train': Seq2LabelDataset(tokenizer=tokenizer, src_list=total_src_list['train'], trg_list=total_trg_list['train'], 
+                                    src_max_len=args.src_max_len),
+            'valid': Seq2LabelDataset(tokenizer=tokenizer, src_list=total_src_list['valid'], trg_list=total_trg_list['valid'], 
+                                    src_max_len=args.src_max_len)
+        }
+        dataloader_dict = {
+            'train': DataLoader(dataset_dict['train'], drop_last=False, batch_size=args.batch_size, shuffle=True,
+                                pin_memory=True, num_workers=args.num_workers),
+            'valid': DataLoader(dataset_dict['valid'], drop_last=False, batch_size=args.batch_size, shuffle=True, 
+                                pin_memory=True, num_workers=args.num_workers)
+        }
+    else:
+        dataset_dict = {
+            'train': Seq2LabelDataset(tokenizer=tokenizer, src_list=total_src_list['train'], trg_list=total_trg_list['train'], 
+                                    src_max_len=args.src_max_len),
+            'valid': Seq2LabelDataset(tokenizer=tokenizer, src_list=total_out_src_list['valid'], trg_list=total_out_trg_list['valid'], 
+                                    src_max_len=args.src_max_len)
+        }
+        dataloader_dict = {
+            'train': DataLoader(dataset_dict['train'], drop_last=False, batch_size=args.batch_size, shuffle=True,
+                                pin_memory=True, num_workers=args.num_workers),
+            'valid': DataLoader(dataset_dict['valid'], drop_last=False, batch_size=args.batch_size, shuffle=True, 
+                                pin_memory=True, num_workers=args.num_workers)
+        }
     write_log(logger, f"Total number of trainingsets iterations - {len(dataset_dict['train'])}, {len(dataloader_dict['train'])}")
 
     model = BertForSequenceClassification.from_pretrained("bert-base-uncased")
@@ -87,7 +103,10 @@ def training(args):
     #===================================#
 
     write_log(logger, 'Traing start!')
+    best_train_loss = 1e+7
+    best_train_acc = 0
     best_val_loss = 1e+7
+    best_val_acc = 0
 
     for epoch in range(start_epoch + 1, args.num_epochs + 1):
         start_time_e = time()
@@ -136,6 +155,9 @@ def training(args):
         train_saved_acc /= len(dataloader_dict['train'])
         write_log(logger, 'Train Total CrossEntropy Loss: %3.3f' % train_saved_loss)
         write_log(logger, 'Train Total Accuracy: %3.2f%%' % (train_saved_acc * 100))
+        if train_saved_loss < best_train_loss:
+            best_train_loss = train_saved_loss
+            best_train_acc = train_saved_acc
 
         write_log(logger, 'Validation start...')
         model.eval()
@@ -177,7 +199,35 @@ def training(args):
                 'scheduler': scheduler.state_dict(),
             }, save_file_path)
             best_val_loss = val_loss
+            best_val_acc = val_acc
             best_epoch = epoch
         else:
             else_log = f'Still {best_epoch} epoch Loss({round(best_val_loss.item(), 5)}) is better...'
             write_log(logger, else_log)
+
+    if os.path.exists('result_saved.csv'):
+        save_dat = pd.read_csv('result_saved.csv')
+        new_dat = pd.DataFrame({
+            'in_domain_data': [args.data_name],
+            'out_domain_data': [args.out_domain_data_name],
+            'augmentation': [args.augmentation],
+            'sampling_ratio': [args.sampling_ratio],
+            'best_train_loss': [best_train_loss.item()],
+            'best_train_acc': [best_train_acc.item()],
+            'best_val_loss': [best_val_loss.item()],
+            'best_val_acc': [best_val_acc.item()]
+        })
+        save_dat = pd.concat([save_dat, new_dat])
+        save_dat.to_csv('result_saved.csv', index=False)
+    else:
+        save_dat = pd.DataFrame({
+            'in_domain_data': [args.data_name],
+            'out_domain_data': [args.out_domain_data_name],
+            'augmentation': [args.augmentation],
+            'sampling_ratio': [args.sampling_ratio],
+            'best_train_loss': [best_train_loss.item()],
+            'best_train_acc': [best_train_acc.item()],
+            'best_val_loss': [best_val_loss.item()],
+            'best_val_acc': [best_val_acc.item()]
+        })
+        save_dat.to_csv('result_saved.csv', index=False)
